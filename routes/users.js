@@ -28,23 +28,21 @@ router.delete("/:id", auth, async (req, res) => {
 //6
 router.put("/:id", auth, async (req, res) => {
   try {
-    if (!req.payload.biz)
-      return res.status(400).send("Only biz can update cards");
+		let filter = { _id: req.params.id };
+		let update = res.body;
+    
+		let errorJoi = await cardSchema.validateData(req.body);
+    if (errorJoi) return res.status(400).send(errorJoi.details[0].message);
 
+		let card = await Card.find(filter);
+		if (card.length === 0) return res.status(400).send("No such card");
 
-    const {
-      error
-    } = cardSchema.validate(req.body);
-    if (error) return res.status(400).send(error.message);
-
-    let card = await Card.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-    if (!card) return res.status(404).send("No such card");
-    res.status(200).send(card);
-  } catch (error) {
-    res.status(400).send(error);
-  }
+		return await Card.findOneAndUpdate(filter, update, { returnOriginal: false })
+			.then((doc) => res.status(200).send("update card" + doc))
+			.catch((err) => res.status(400).send(err.message));
+	} catch (error) {
+        return res.status(400).send("error in update");
+    }
 });
 
 //5
